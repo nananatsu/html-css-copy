@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "元素导出器",
+  "version": "1.0",
+  "description": "选择并显示网页元素及其样式",
+  "permissions": ["activeTab", "scripting"],
+  "host_permissions": ["<all_urls>"],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["elementInfo.html"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
