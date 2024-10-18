@@ -7,6 +7,12 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     document.body.style.cursor = 'crosshair';
     document.addEventListener('mouseover', highlightElementHandler);
     document.addEventListener('click', selectElementHandler, true);
+  } else if (request.action === "exportElement") {
+    if (selectedElement) {
+      exportHTML();
+    } else {
+      alert("请先选择一个元素");
+    }
   }
 });
 
@@ -42,14 +48,18 @@ function selectElementHandler(e) {
     highlightElement = null;
   }
 
-  // 获取元素的HTML和CSS，并内联CSS
-  const inlinedHtml = inlineStyles(selectedElement);
+  // 直接导出 HTML
+  exportHTML();
+}
 
-  // 发送消息到background script
-  chrome.runtime.sendMessage({
-    action: "showElementInfo",
-    html: inlinedHtml
-  });
+function exportHTML() {
+  if (selectedElement) {
+    const inlinedHtml = inlineStyles(selectedElement);
+    chrome.runtime.sendMessage({
+      action: "showElementInfo",
+      html: inlinedHtml
+    });
+  }
 }
 
 function inlineStyles(element) {
