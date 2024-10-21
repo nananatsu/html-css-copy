@@ -16,36 +16,67 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 
     // 添加复制功能
     copyButton.addEventListener('click', function() {
-      navigator.clipboard.writeText(request.html).then(function() {
-        // 创建一个临时的成功消息元素
-        const successMessage = document.createElement('span');
-        successMessage.textContent = '复制成功！';
-        successMessage.style.cssText = `
-          color: green;
-          margin-left: 10px;
-          transition: opacity 0.5s ease-in-out;
-        `;
-        copyButton.parentNode.insertBefore(successMessage, copyButton.nextSibling);
-
-        // 2秒后淡出并移除成功消息
-        setTimeout(() => {
-          successMessage.style.opacity = '0';
-          setTimeout(() => {
-            successMessage.remove();
-          }, 500);
-        }, 2000);
-      }, function(err) {
-        console.error('无法复制文本: ', err);
-        // 如果复制失败，我们仍然显示一个错误消息
-        const errorMessage = document.createElement('span');
-        errorMessage.textContent = '复制失败，请重试';
-        errorMessage.style.cssText = `
-          color: red;
-          margin-left: 10px;
-        `;
-        copyButton.parentNode.insertBefore(errorMessage, copyButton.nextSibling);
-        setTimeout(() => errorMessage.remove(), 3000);
-      });
+      copyToClipboard(request.html);
     });
   }
 });
+
+function copyToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    // 使用 Clipboard API
+    navigator.clipboard.writeText(text).then(function() {
+      showMessage('复制成功！', 'success');
+    }, function(err) {
+      console.error('Clipboard API 复制失败: ', err);
+      fallbackCopyTextToClipboard(text);
+    });
+  } else {
+    // 回退到其他方法
+    fallbackCopyTextToClipboard(text);
+  }
+}
+
+function fallbackCopyTextToClipboard(text) {
+  const textArea = document.createElement("textarea");
+  textArea.value = text;
+  
+  // 避免滚动到底部
+  textArea.style.top = "0";
+  textArea.style.left = "0";
+  textArea.style.position = "fixed";
+
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+
+  try {
+    const successful = document.execCommand('copy');
+    const msg = successful ? '复制成功！' : '复制失败，请重试';
+    showMessage(msg, successful ? 'success' : 'error');
+  } catch (err) {
+    console.error('Fallback: 复制失败', err);
+    showMessage('复制失败，请重试', 'error');
+  }
+
+  document.body.removeChild(textArea);
+}
+
+function showMessage(message, type) {
+  const messageElement = document.createElement('span');
+  messageElement.textContent = message;
+  messageElement.style.cssText = `
+    margin-left: 10px;
+    transition: opacity 0.5s ease-in-out;
+    color: ${type === 'success' ? 'green' : 'red'};
+  `;
+  
+  const copyButton = document.getElementById('copyButton');
+  copyButton.parentNode.insertBefore(messageElement, copyButton.nextSibling);
+
+  setTimeout(() => {
+    messageElement.style.opacity = '0';
+    setTimeout(() => {
+      messageElement.remove();
+    }, 500);
+  }, 2000);
+}

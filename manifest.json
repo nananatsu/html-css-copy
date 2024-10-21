@@ -1,26 +1,30 @@
 {
-  "manifest_version": 3,
+  "manifest_version": 2,
   "name": "元素导出器",
   "version": "1.0",
   "description": "选择并显示网页元素及其样式",
-  "permissions": ["activeTab", "scripting"],
-  "host_permissions": ["<all_urls>"],
-  "action": {
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "<all_urls>",
+    "downloads"
+  ],
+  "browser_action": {
     "default_popup": "popup.html"
   },
   "background": {
-    "service_worker": "background.js"
+    "scripts": ["background.js"],
+    "persistent": false
   },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"]
+      "js": ["content.js"],
+      "run_at": "document_end",
+      "all_frames": true
     }
   ],
   "web_accessible_resources": [
-    {
-      "resources": ["elementInfo.html"],
-      "matches": ["<all_urls>"]
-    }
+    "elementInfo.html"
   ]
 }
