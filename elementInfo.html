@@ -63,6 +63,14 @@
     #copyButton:hover {
       background-color: #2980b9;
     }
+    .checkbox-container {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    #simplifyCheckbox {
+      margin-right: 10px;
+    }
   </style>
 </head>
 <body>
@@ -70,6 +78,10 @@
     <h1>选中元素信息</h1>
     <div class="code-section">
       <h2>HTML (包含内联样式)</h2>
+      <div class="checkbox-container">
+        <input type="checkbox" id="simplifyCheckbox" checked>
+        <label for="simplifyCheckbox">精简 HTML+CSS</label>
+      </div>
       <button id="copyButton">复制 HTML+CSS</button>
       <pre id="htmlContent"></pre>
     </div>

@@ -1,5 +1,7 @@
 let selectedElement = null;
 let highlightElement = null;
+let isSelecting = false;
+let startX, startY;
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   console.log("Content script received message:", request);
@@ -13,6 +15,8 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     } else {
       alert("请先选择一个元素");
     }
+  } else if (request.action === "smartGenerate") {
+    createOverlay();
   }
 });
 
@@ -180,4 +184,88 @@ function isCompatibilityStyle(prop) {
          prop.includes('moz') || 
          prop.includes('ms') || 
          prop.includes('o');
+}
+
+function createOverlay() {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: transparent;
+    z-index: 10000;
+    cursor: crosshair;
+  `;
+  document.body.appendChild(overlay);
+
+  const selectionBox = document.createElement('div');
+  selectionBox.style.cssText = `
+    position: fixed;
+    border: 2px solid #fff;
+    background-color: rgba(0, 0, 0, 0.1);
+    display: none;
+    z-index: 10001;
+  `;
+  document.body.appendChild(selectionBox);
+
+  overlay.addEventListener('mousedown', startSelection);
+  overlay.addEventListener('mousemove', updateSelection);
+  overlay.addEventListener('mouseup', endSelection);
+
+  function startSelection(e) {
+    isSelecting = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    selectionBox.style.left = startX + 'px';
+    selectionBox.style.top = startY + 'px';
+    selectionBox.style.display = 'block';
+  }
+
+  function updateSelection(e) {
+    if (!isSelecting) return;
+    const currentX = e.clientX;
+    const currentY = e.clientY;
+    const width = Math.abs(currentX - startX);
+    const height = Math.abs(currentY - startY);
+    selectionBox.style.width = width + 'px';
+    selectionBox.style.height = height + 'px';
+    selectionBox.style.left = (currentX > startX ? startX : currentX) + 'px';
+    selectionBox.style.top = (currentY > startY ? startY : currentY) + 'px';
+  }
+
+  function endSelection(e) {
+    if (!isSelecting) return;
+    isSelecting = false;
+    const endX = e.clientX;
+    const endY = e.clientY;
+    const width = Math.abs(endX - startX);
+    const height = Math.abs(endY - startY);
+    const left = Math.min(startX, endX);
+    const top = Math.min(startY, endY);
+
+    captureSelectedArea(left, top, width, height);
+
+    overlay.remove();
+    selectionBox.remove();
+  }
+}
+
+function captureSelectedArea(left, top, width, height) {
+  const data = {
+    action: "captureScreenshot",
+    area: { x: left, y: top, width, height },
+    format: 'jpeg'  // 添加这一行，指定格式为 JPEG
+  };
+  chrome.runtime.sendMessage(data);
+}
+
+function sendImageToAI(imageDataUrl) {
+  // 这里应该实现发送图片到 AI 服务的逻辑
+  // 由于涉及到外部 API 调用，我们需要在 background.js 中实现这个功能
+  chrome.runtime.sendMessage({
+    action: "sendImageToAI",
+    imageDataUrl: imageDataUrl
+  });
 }

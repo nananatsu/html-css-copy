@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>设置 - 元素导出器</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #333;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    input[type="text"], textarea, select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    textarea {
+      height: 100px;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    #imgbbApiKey, #customMessageTemplate {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>设置</h1>
+  <div class="form-group">
+    <label for="aiServiceUrl">AI 服务地址:</label>
+    <input type="text" id="aiServiceUrl" name="aiServiceUrl">
+  </div>
+  <div class="form-group">
+    <label for="apiKey">API Key:</label>
+    <input type="text" id="apiKey" name="apiKey">
+  </div>
+  <div class="form-group">
+    <label for="modelName">模型名称:</label>
+    <input type="text" id="modelName" name="modelName">
+  </div>
+  <div class="form-group">
+    <label for="messageTemplateType">消息模板类型:</label>
+    <select id="messageTemplateType" name="messageTemplateType">
+      <option value="OpenAI">OpenAI</option>
+      <option value="Custom">自定义</option>
+    </select>
+  </div>
+  <div class="form-group" id="customMessageTemplate">
+    <label for="messageTemplate">消息模板:</label>
+    <textarea id="messageTemplate" name="messageTemplate" placeholder="使用{image}作为实际图像占位符"></textarea>
+  </div>
+  <div class="form-group">
+    <label for="imageHosting">图床:</label>
+    <select id="imageHosting" name="imageHosting">
+      <option value="none">无</option>
+      <option value="imgbb">ImgBB</option>
+    </select>
+  </div>
+  <div class="form-group" id="imgbbApiKey">
+    <label for="imgbbKey">ImgBB API Key:</label>
+    <input type="text" id="imgbbKey" name="imgbbKey">
+  </div>
+  <button id="saveSettings">保存设置</button>
+  <script src="settings.js"></script>
+</body>
+</html>
