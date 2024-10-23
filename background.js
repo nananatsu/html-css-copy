@@ -1,4 +1,4 @@
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   console.log("Background script received message:", request);
   if (request.action === "download") {
     chrome.downloads.download({
@@ -12,7 +12,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   } else if (request.action === "showElementInfo") {
     showElementInfo(request.html);
   } else if (request.action === "captureScreenshot") {
-    chrome.tabs.captureVisibleTab(null, {format: request.format || 'png'}, function(screenshotUrl) {
+    chrome.tabs.captureVisibleTab(null, { format: request.format || 'png' }, function (screenshotUrl) {
       showScreenshotPreview(screenshotUrl, request.area, request.format);
     });
   } else if (request.action === "sendImageToAI") {
@@ -26,7 +26,7 @@ function showScreenshotPreview(screenshotUrl, area, format) {
     type: "popup",
     width: 800,
     height: 600
-  }, function(window) {
+  }, function (window) {
     chrome.tabs.onUpdated.addListener(function listener(tabId, info) {
       if (info.status === 'complete' && tabId === window.tabs[0].id) {
         chrome.tabs.onUpdated.removeListener(listener);
@@ -42,23 +42,34 @@ function showScreenshotPreview(screenshotUrl, area, format) {
 }
 
 function sendImageToAIService(imageDataUrl) {
-  chrome.storage.sync.get(['aiServiceUrl', 'apiKey', 'modelName', 'messageTemplateType', 'customMessageTemplate', 'imageHosting', 'imgbbKey'], function(result) {
-    const aiServiceUrl = result.aiServiceUrl;
-    const apiKey = result.apiKey;
-    const modelName = result.modelName;
-    const messageTemplateType = result.messageTemplateType;
-    const customMessageTemplate = result.customMessageTemplate;
-    const imageHosting = result.imageHosting;
-    const imgbbKey = result.imgbbKey;
+  chrome.storage.sync.get(['configurations', 'currentConfig'], function (result) {
+    const configurations = result.configurations || {};
+    const currentConfig = result.currentConfig || Object.keys(configurations)[0];
+    const config = configurations[currentConfig];
 
-    if (!aiServiceUrl || !apiKey || !modelName || !messageTemplateType || !customMessageTemplate) {
-      sendErrorMessage('请先在设置中配置 AI 服务地址、API Key、模型名称、消息模板类型和自定义消息模板');
+    if (!config) {
+      sendErrorMessage('未找到有效配置，请在设置中创建或选择一个配置');
+      return;
+    }
+
+    const {
+      aiServiceUrl,
+      apiKey,
+      modelName,
+      messageTemplateType,
+      customMessageTemplate,
+      imageHosting,
+      imgbbKey
+    } = config;
+
+    if (!aiServiceUrl || !apiKey || !modelName || !messageTemplateType) {
+      sendErrorMessage('配置信息不完整，请检查设置');
       return;
     }
 
     if (imageHosting === 'imgbb') {
       if (!imgbbKey) {
-        sendErrorMessage('请先在设置中配置 ImgBB API Key');
+        sendErrorMessage('请在当前配置中设置 ImgBB API Key');
         return;
       }
       uploadToImgBB(imageDataUrl, imgbbKey)
@@ -81,14 +92,14 @@ function uploadToImgBB(imageDataUrl, apiKey) {
     method: 'POST',
     body: formData
   })
-  .then(response => response.json())
-  .then(result => {
-    if (result.data && result.data.url) {
-      return result.data.url;
-    } else {
-      throw new Error('ImgBB upload failed');
-    }
-  });
+    .then(response => response.json())
+    .then(result => {
+      if (result.data && result.data.url) {
+        return result.data.url;
+      } else {
+        throw new Error('ImgBB upload failed');
+      }
+    });
 }
 
 function sendAIRequest(aiServiceUrl, apiKey, modelName, messageTemplateType, customMessageTemplate, imageUrl) {
@@ -132,6 +143,10 @@ function sendAIRequest(aiServiceUrl, apiKey, modelName, messageTemplateType, cus
       model: modelName,
       messages: [
         {
+          role: "system",
+          content: "你是一位专业的前端开发工程师，擅长将设计稿转换为语义化且高效的HTML和CSS代码。"
+        },
+        {
           role: "user",
           content: message
         }
@@ -143,30 +158,32 @@ function sendAIRequest(aiServiceUrl, apiKey, modelName, messageTemplateType, cus
       top_p: 0.7
     }),
   })
-  .then(response => {
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return response.json();
-  })
-  .then(data => {
-    if (data.choices && data.choices.length > 0) {
-      const generatedContent = data.choices[0].message.content;
-      const extractedHtml = extractHtmlFromResponse(generatedContent);
-      if (extractedHtml) {
-        showGeneratedElementInfo(extractedHtml);
-        sendAIResponse(); // 只发送成功消息，不包含响应内容
-      } else {
-        throw new Error('无法从 AI 响应中提取 HTML 代码');
+    .then(response => {
+      if (!response.ok) {
+        return response.text().then(text => {
+          throw new Error(text || `HTTP error! status: ${response.status}`);
+        });
       }
-    } else {
-      throw new Error('AI 服务返回的数据格式不正确');
-    }
-  })
-  .catch(error => {
-    console.error('Error:', error);
-    sendErrorMessage('生成失败，请重试: ' + error.message);
-  });
+      return response.json();
+    })
+    .then(data => {
+      if (data.choices && data.choices.length > 0) {
+        const generatedContent = data.choices[0].message.content;
+        const extractedHtml = extractHtmlFromResponse(generatedContent);
+        if (extractedHtml) {
+          showGeneratedElementInfo(extractedHtml);
+          sendAIResponse(); // 只发送成功消息，不包含响应内容
+        } else {
+          throw new Error('无法从 AI 响应中提取 HTML 代码');
+        }
+      } else {
+        throw new Error('AI 服务返回的数据格式不正确');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      sendErrorMessage('生成失败，请重试: ' + error.message);
+    });
 }
 
 function extractHtmlFromResponse(response) {
@@ -181,10 +198,10 @@ function extractHtmlFromResponse(response) {
 function inlineCssToHtml(html) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
-  
+
   // 查找所有的 <style> 标签
   const styleTags = doc.getElementsByTagName('style');
-  
+
   if (styleTags.length === 0) {
     // 如果没有 <style> 标签，说明 CSS 可能已经内联，直接返回原 HTML
     return html;
@@ -235,7 +252,7 @@ function showGeneratedElementInfo(html) {
     type: "popup",
     width: 800,
     height: 600
-  }, function(window) {
+  }, function (window) {
     chrome.tabs.onUpdated.addListener(function listener(tabId, info) {
       if (info.status === 'complete' && tabId === window.tabs[0].id) {
         chrome.tabs.onUpdated.removeListener(listener);
@@ -254,7 +271,7 @@ function showElementInfo(html) {
     type: "popup",
     width: 800,
     height: 600
-  }, function(window) {
+  }, function (window) {
     chrome.tabs.onUpdated.addListener(function listener(tabId, info) {
       if (info.status === 'complete' && tabId === window.tabs[0].id) {
         chrome.tabs.onUpdated.removeListener(listener);

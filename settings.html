@@ -10,7 +10,7 @@
       max-width: 600px;
       margin: 0 auto;
     }
-    h1 {
+    h1, h2 {
       color: #333;
     }
     .form-group {
@@ -36,6 +36,7 @@
       border: none;
       border-radius: 4px;
       cursor: pointer;
+      margin-right: 10px;
     }
     button:hover {
       background-color: #45a049;
@@ -43,10 +44,32 @@
     #imgbbApiKey, #customMessageTemplate {
       display: none;
     }
+    .import-export {
+      margin-bottom: 20px;
+    }
+    #importInput {
+      display: none;
+    }
+    .bottom-buttons {
+      margin-top: 20px;
+      border-top: 1px solid #ddd;
+      padding-top: 20px;
+      display: flex;
+      justify-content: space-between;
+    }
   </style>
 </head>
 <body>
   <h1>设置</h1>
+  <div class="import-export">
+    <button id="exportConfig">导出配置</button>
+    <button id="importConfig">导入配置</button>
+    <input type="file" id="importInput" accept=".json">
+  </div>
+  <div class="form-group">
+    <label for="configSelect">选择配置:</label>
+    <select id="configSelect"></select>
+  </div>
   <div class="form-group">
     <label for="aiServiceUrl">AI 服务地址:</label>
     <input type="text" id="aiServiceUrl" name="aiServiceUrl">
@@ -81,7 +104,11 @@
     <label for="imgbbKey">ImgBB API Key:</label>
     <input type="text" id="imgbbKey" name="imgbbKey">
   </div>
-  <button id="saveSettings">保存设置</button>
+  <div class="bottom-buttons">
+    <button id="updateConfig">更新配置</button>
+    <button id="copyConfig">复制配置</button>
+    <button id="deleteConfig">删除配置</button>
+  </div>
   <script src="settings.js"></script>
 </body>
 </html>
